@@ -4,7 +4,7 @@ from IPython.display import Markdown, display
 from langgraph.graph import END
 
 if TYPE_CHECKING:
-    from core.schemas import IdiomaticState # For type hinting
+    from ..core.schemas import IdiomaticState # Adjusted for relative import
 
 # Placeholder for llm_with_tools and save_user_data
 # These will be imported or passed as arguments.
@@ -23,13 +23,11 @@ IDIOMATIC_BOT_SYSINT = (
   " - Do NOT call tools unnecessarily. If the user is just chatting or providing a quiz answer (a, b, c, d), respond naturally or let the workflow handle the answer. "
   " - Be flexible, encouraging, and gently correct users when needed. "
   "\n\n"
-  # "Current Score: {score}. Last Question Idiom: {last_idiom}." # This will be part of the dynamic prompt context
 )
 
 def chatbot_node(state: 'IdiomaticState', llm_with_tools_instance, save_user_data_func) -> 'IdiomaticState':
     """Handles initial setup, invokes LLM for routing/chat/tools, and checks for quit signal."""
 
-    # 1. Initial Setup (if name is not set)
     if not state.get("name"):
         print("--- Initial Setup ---")
         user_name = input("👋 Welcome to Idiomatic! What's your name? ")
@@ -55,36 +53,16 @@ def chatbot_node(state: 'IdiomaticState', llm_with_tools_instance, save_user_dat
         state["messages"].append(AIMessage(content=final_message))
         display(Markdown(final_message))
         state["finished"] = True
-        save_user_data_func(state) # Use passed function
+        save_user_data_func(state)
         return state
 
     try:
         print("--- Invoking LLM with Tools ---")
-        # Construct the dynamic part of the system prompt
-        # current_score = state.get('score', 0)
-        # last_idiom_name = state.get('last_question', {}).get('idiom', 'None')
-        # dynamic_sysint = IDIOMATIC_BOT_SYSINT + f"\nCurrent Score: {current_score}. Last Question Idiom: {last_idiom_name}."
-
-        # The llm_with_tools is expected to be pre-configured with tools that can access state.
-        # If tools need direct access to llm, it's handled by the tool itself.
-        # For the chatbot node, the system prompt needs access to score and last idiom.
         current_score = state.get('score', 0)
         last_idiom_name = state.get('last_question', {}).get('idiom', 'None')
 
-        # The IDIOMATIC_BOT_SYSINT itself might contain placeholders like {score} and {last_idiom}
-        # or we append them. The original had them appended.
-        # Let's ensure IDIOMATIC_BOT_SYSINT does not have these placeholders to avoid confusion.
-        # And append them dynamically here.
-
         dynamic_prompt_context = f"\nCurrent Score: {current_score}. Last Question Idiom: {last_idiom_name}."
         final_system_prompt = IDIOMATIC_BOT_SYSINT + dynamic_prompt_context
-
-        # Ensure tools are correctly bound if they need llm_instance.
-        # This will be handled by how llm_with_tools_instance is created.
-        # The tool functions themselves (explain_last_question, lookup_idiom) were defined
-        # in tools/idiom_tools.py to accept llm_instance.
-        # The main script will use functools.partial to bind the llm_instance to these tools
-        # before they are passed to llm.bind_tools() and then to ToolNode.
 
         response = llm_with_tools_instance.invoke(
             [SystemMessage(content=final_system_prompt)] + state["messages"]
@@ -122,12 +100,6 @@ def route_logic(state: 'IdiomaticState') -> Literal["tools", "evaluate_quiz", "c
 
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
         print("--- Routing: AIMessage with Tool Calls -> Tools Node ---")
-        # The tool calls will include the tool name and arguments.
-        # For tools that need `llm_instance` (explain_last_question, lookup_idiom),
-        # the `ToolNode` execution must somehow provide this.
-        # This is the tricky part with the current setup.
-        # Standard `ToolNode` does not pass extra arguments like an `llm_instance` to tools.
-        # The tools should ideally be self-contained or use a globally accessible LLM.
         return "tools"
 
     if isinstance(last_message, ToolMessage):
@@ -149,18 +121,3 @@ def route_logic(state: 'IdiomaticState') -> Literal["tools", "evaluate_quiz", "c
 
     print("--- Routing: Fallback -> Generate Question ---")
     return "generate_question"
-
-# Note: The issue with `llm_instance` for tools needs to be resolved.
-# Option 1: Tools in `idiom_tools.py` import and use a global `llm` (initialized in main script).
-# Option 2: Modify `ToolNode` or create a custom one that can pass context. (More complex)
-# Option 3: Curry the tools with the `llm_instance` when they are defined or when `llm_with_tools` is created.
-# Example for Option 3 (in main script or graph.py):
-# from functools import partial
-# bound_explain_tool = partial(explain_last_question, llm_instance=llm)
-# bound_lookup_tool = partial(lookup_idiom, llm_instance=llm)
-# tools = [show_score, bound_explain_tool, bound_lookup_tool, quit_session]
-# llm_with_tools = llm.bind_tools(tools)
-# tool_node = ToolNode(tools)
-# This seems the most viable approach. The `agent.py` itself doesn't need to change much then,
-# but the tool definitions and how they are passed to `llm.bind_tools` will.
-# For now, I'll proceed with creating agent.py as is, and we'll address the tool binding during graph setup or main script refactoring.

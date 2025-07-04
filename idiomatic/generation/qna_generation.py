@@ -5,7 +5,7 @@ from IPython.display import Markdown, display
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.schemas import IdiomaticState # For type hinting
+    from ..core.schemas import IdiomaticState # Adjusted for relative import
 
 # Assuming client is initialized elsewhere and passed or imported
 # from ..idiomatic import client # This will need adjustment based on final structure
@@ -79,28 +79,32 @@ class IdiomQuizItem:
   question: str  # The question about the idiom
   answer: str    # The expected answer
 
-GENERATE_QnA_CONFIG = types.GenerateContentConfig(
-    max_output_tokens=200,
-    temperature=1.5,
-    top_p=0.95,
-    response_mime_type="application/json",
-    response_schema=IdiomQuizItem
-)
-
-# Note: `client` needs to be available in the scope of this function.
-# It will be initialized in the main script and might need to be passed or imported.
-def generate_idiom_question(state: 'IdiomaticState', client_instance) -> 'IdiomaticState':
+# Note: `client_instance` needs to be available in the scope of this function.
+# It will be initialized in the main script and passed, along with other config values.
+def generate_idiom_question(state: 'IdiomaticState',
+                            client_instance,
+                            model_name: str,
+                            temperature: float,
+                            top_p: float,
+                            max_output_tokens: int) -> 'IdiomaticState':
     """Use Gemini to dynamically generate an idiom and an associated Q/A"""
     print("--- Generating Question ---")
-    # difficulty = state["user_level"] # Not used in current prompt, but kept for potential future use
+
+    current_qna_config = types.GenerateContentConfig(
+        max_output_tokens=max_output_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        response_mime_type="application/json",
+    )
+
     response = client_instance.models.generate_content(
-        model="gemini-2.0-flash", # Consider making model name configurable
+        model=model_name,
         contents=GENERATE_QnA_PROMPT,
-        config=GENERATE_QnA_CONFIG,
+        generation_config=current_qna_config,
     )
     qna = json.loads(response.text)
     state["last_question"] = qna
-    if "history" not in state: # Ensure history exists
+    if "history" not in state:
         state["history"] = []
     state["history"].append(qna["idiom"])
     display(Markdown(qna["question"]))
