@@ -1,8 +1,4 @@
-# idiomatic_app
-
 ![idiomatic](idiomatic.jpeg)
-
-AI agent makes you idiomatic
 
 Many non-native English speakers — even those with strong proficiency — sometimes struggle to understand or confidently use idiomatic expressions. Idioms, whether common or obscure, can become barriers to communication when misunderstood, yet avoiding them can strip language of its natural rhythm and charm.
 
