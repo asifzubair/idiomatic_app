@@ -1,5 +1,7 @@
 ![idiomatic](idiomatic.jpeg)
 
+---
+
 Many non-native English speakers — even those with strong proficiency — sometimes struggle to understand or confidently use idiomatic expressions. Idioms, whether common or obscure, can become barriers to communication when misunderstood, yet avoiding them can strip language of its natural rhythm and charm.
 
 **Idiomatic** takes an active learning approach to help learners grasp and apply idioms in everyday conversation. Built with an agentic workflow and powered by spaced repetition, the tool delivers an engaging, personalized learning experience that grows with the user. While intended for non-native speakers, the tool can be used by anyone who wants to improve their language prowess, as it attempts to adapt to the user's level of expertise.
