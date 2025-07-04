@@ -8,7 +8,7 @@ from IPython.display import Markdown, display
 from langgraph.graph import END # Will be used by create_graph if not directly
 from langchain_core.messages import AIMessage # For evaluate_quiz_answer
 from langchain_google_genai import ChatGoogleGenerativeAI
-from google import genai
+import google.generativeai as genai
 from google.api_core import retry # type: ignore
 
 # Local module imports (now relative)

@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from google.genai import types
+import google.generativeai as genai
 from IPython.display import Markdown, display
 from typing import TYPE_CHECKING
 
@@ -90,19 +90,39 @@ def generate_idiom_question(state: 'IdiomaticState',
     """Use Gemini to dynamically generate an idiom and an associated Q/A"""
     print("--- Generating Question ---")
 
-    current_qna_config = types.GenerateContentConfig(
+    # The client_instance (genai.Client) passed from main has configured the API key.
+    # We now create a GenerativeModel instance.
+    model = genai.GenerativeModel(model_name)
+
+    current_qna_config = genai.types.GenerationConfig( # Corrected to genai.types.GenerationConfig
         max_output_tokens=max_output_tokens,
         temperature=temperature,
         top_p=top_p,
-        response_mime_type="application/json",
+        response_mime_type="application/json", # Ensure this is valid for GenerationConfig
     )
+    # For response_mime_type with genai.GenerativeModel, it's often set in model params or generate_content's request options
+    # Forcing JSON output is typically done via specific instructions in the prompt or model settings if available,
+    # or by setting response_format={"type": "json_object"} in generation_config for newer API versions/models.
+    # Let's assume response_mime_type is handled correctly by the model or SDK for now,
+    # but this might need adjustment if JSON isn't produced.
+    # The prompt already asks for a dict, which is good.
 
-    response = client_instance.models.generate_content(
-        model=model_name,
+    response = model.generate_content(
         contents=GENERATE_QnA_PROMPT,
         generation_config=current_qna_config,
     )
-    qna = json.loads(response.text)
+    # It's good practice to check response.parts and handle potential errors or empty responses
+    # For now, assuming response.text is populated as expected.
+    qna_text = response.text
+    try:
+        qna = json.loads(qna_text)
+    except json.JSONDecodeError:
+        print(f"Error: Failed to decode JSON from LLM response: {qna_text}")
+        # Handle error appropriately, e.g., by setting a default error question or re-raising
+        state["last_question"] = {"idiom": "Error", "question": "Could not generate question.", "answer": ""}
+        # Potentially add a message to the user/state about the error
+        return state # Or raise an exception
+
     state["last_question"] = qna
     if "history" not in state:
         state["history"] = []
