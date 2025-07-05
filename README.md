@@ -1,4 +1,4 @@
-[idiomatic](idiomatic.jpeg)
+![idiomatic](idiomatic.jpeg)
 
 ---
 
