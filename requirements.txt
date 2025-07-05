@@ -3,3 +3,4 @@ langchain-google-genai==2.1.2
 langgraph-prebuilt==0.1.7
 google-genai==1.7.0
 ipython==7.34.0
+typing-extensions>=4.0.0
