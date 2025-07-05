@@ -44,9 +44,60 @@ I used the technique taught in the course of:
 
 I followed the Agents code lab to have a Chatbot node that could orchestrate different actions. I needed to refine the system prompt to strongly emphasize tool usage, otherwise tools were not being called. I also needed some help from Gemini, as I couldn't get the routing correct by myself and the code labs don't go deep into orchestration. 
 
+## Project Structure
+
+The codebase has been refactored into a Python package structure for better organization and maintainability:
+
+- `idiomatic/`: The main package directory.
+  - `__init__.py`: Makes the directory a Python package and exports `IdiomaticConfig` and `run_app`.
+  - `app.py`: Contains the `run_app` function, which orchestrates the application setup (LLM clients, tool binding) and execution. It also defines global instances for LLM clients and application configuration that other modules can import at runtime.
+  - `config.py`: Defines the `IdiomaticConfig` dataclass for managing all application settings.
+  - `agent.py`: Defines the `IdiomaticState` TypedDict for the LangGraph agent and includes core agent nodes like `chatbot_node` (for user interaction and LLM routing) and `get_user_input`. It also contains the main system prompt for the agent.
+  - `qna_generation.py`: Handles the logic for generating idiom questions and evaluating user answers (e.g., `generate_idiom_question`, `evaluate_quiz_answer`, `IdiomQuizItem` dataclass, and Q&A prompt).
+  - `tools.py`: Defines the custom tools available to the agent (e.g., `show_score`, `explain_last_question`) and creates the `ToolNode` instance.
+  - `graph.py`: Contains the `route_logic` function and the `create_graph` function, which builds and compiles the LangGraph `StateGraph`.
+  - `utils.py`: Provides utility functions, currently including data persistence (`load_user_data`, `save_user_data`) and display fallbacks for non-IPython environments.
+- `main.py`: An example script demonstrating how to import `IdiomaticConfig` and `run_app` to start the application.
+- `requirements.txt`: Lists project dependencies.
+- `user_data.json`: Default file for storing user progress (created when the app runs).
+
+## How to Run
+
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
+2.  **Set up a Python virtual environment (recommended):**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+3.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  **Set your Google API Key:**
+    The application requires a Google API Key with access to the Gemini models. Set it as an environment variable:
+    ```bash
+    export GOOGLE_API_KEY="YOUR_API_KEY_HERE"
+    ```
+    (On Windows, use `set GOOGLE_API_KEY="YOUR_API_KEY_HERE"` or set it through system properties).
+5.  **Run the application:**
+    ```bash
+    python main.py
+    ```
+    The application will start, and you can interact with it in your terminal. User data will be saved in `user_data.json` by default.
+
 ## The Agent Graph
 
-The graph below shows the workflow. I had to add the `get_input` node as an intermediate as I wanted the user to break the question and answer flow to interact with the tutor at any instance. Presently, the chatbot engages in some niceties, generates questions for the user to answer and then scores them. At any instance the user might provide a natural language prompt, at which point the Chatbot will either use its tools to reply or politely that it doesn't know, at which point the user can continue playing the quiz.
+The graph below shows the workflow. The core logic for the graph nodes is now organized into specific modules:
+- Agent interaction nodes (`chatbot_node`, `get_user_input`) are in `idiomatic/agent.py`.
+- Question generation and evaluation nodes (`generate_idiom_question`, `evaluate_quiz_answer`) are in `idiomatic/qna_generation.py`.
+- The `ToolNode` is defined in `idiomatic/tools.py`.
+- The graph itself, including `route_logic` and connections, is constructed in `idiomatic/graph.py`.
+
+I had to add the `get_input` node as an intermediate as I wanted the user to break the question and answer flow to interact with the tutor at any instance. Presently, the chatbot engages in some niceties, generates questions for the user to answer and then scores them. At any instance the user might provide a natural language prompt, at which point the Chatbot will either use its tools to reply or politely that it doesn't know, at which point the user can continue playing the quiz.
 
 ## Final Remarks
 
